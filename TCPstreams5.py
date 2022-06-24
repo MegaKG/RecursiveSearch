@@ -72,6 +72,8 @@ class clientCon:
 
 def newServer(Host,Port):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
     s.bind((Host, Port))
     s.listen(1)
     return s

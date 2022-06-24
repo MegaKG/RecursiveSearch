@@ -10,6 +10,7 @@ class searcher:
             Config['DB_Database'],
             int(Config['DB_Port'])
             )
+        self.table = Config['DB_Table']
         
         if Config['DB_Table'] not in self.DB.showtables():   
             self.DB.maketable(Config['DB_Table'],{
@@ -21,7 +22,9 @@ class searcher:
 
 
     def search(self,Term):
-        Output = []
+        print("Searching for",Term)
+        R = self.DB.readasdict(self.table,criteria={'Terms':Term.decode()})
+        return R['URL']
 
 
     def __del__(self):

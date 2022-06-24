@@ -2,7 +2,7 @@
 import Searcher
 import ConfigUtils
 import Logger
-import TCPstreams4 as TCP
+import TCPstreams5 as TCP
 
 import threading
 import struct
@@ -14,15 +14,22 @@ def upstreamRequest(host,ID,Iter,MaxDepth,QLength,Data):
     CON.senddat(
         struct.pack('!L',ID) + struct.pack('!L',Iter+1) + struct.pack('!L',MaxDepth) + struct.pack('!L',QLength) + Data
     )
-    ResultLength = struct.unpack('!L',CON.getdat(4))[0]
-    if (ResultLength != 0):
-        Data = CON.getdat(ResultLength)
+    ResultCount = struct.unpack('!L',CON.getdat(4))[0]
+    print("Result Count is",ResultCount)
+    
+    if (ResultCount != 0):
+        Data = b''
+        for i in range(ResultCount):
+            D = CON.getdat(4)
+            ResultLength = struct.unpack('!L',D)[0]
+            Data += D
+            Data += CON.getdat(ResultLength)
     else:
         Data = b''
 
     CON.close()
 
-    return struct.pack('!L',ResultLength) + b''
+    return struct.pack('!L',ResultCount) + Data
 
 
 #Packet Structure:
@@ -39,8 +46,7 @@ def clientHandle(CON,MYID,CONF,log,ser):
     QLength = struct.unpack('!L',CON.getdat(4))[0]
     DATA = CON.getdat(QLength)
 
-    Previous = Previous[1:]
-    Previous.append(ID)
+    
    # print(Previous,ID)
 
     #Check if We have already got this message
@@ -49,6 +55,9 @@ def clientHandle(CON,MYID,CONF,log,ser):
         CON.senddat(struct.pack('!L',0))
         CON.close()
         return
+
+    Previous = Previous[1:]
+    Previous.append(ID)
 
     #If Max Depth, Expire
     if Iter > MaxDepth:
@@ -77,6 +86,7 @@ def clientHandle(CON,MYID,CONF,log,ser):
                 D = json.dumps(i).encode()
                 OUT += struct.pack('!L',len(D))
                 OUT += D
+            print("Returning",OUT)
             CON.senddat(OUT)
 
 
@@ -84,7 +94,7 @@ def clientHandle(CON,MYID,CONF,log,ser):
 
 
 
-
+ 
 
 def main(ConfigPath):
     global Previous
@@ -115,4 +125,5 @@ def main(ConfigPath):
 
 
 if __name__ == '__main__':
-    main('SearchEngine.conf')
+    import sys
+    main(sys.argv[1])
